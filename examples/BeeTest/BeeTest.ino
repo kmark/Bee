@@ -1,13 +1,12 @@
 #include <Bee.h>
 
-Bee *XBee;
+Bee XBee(&Serial3, 19200);
 
 void setup() {
   Serial.begin(115200);
-  XBee = new Bee(&Serial3, 19200);
-  delay(1000);
-  XBee->setCallback(beeCallback);
-  //XBee->sendData("Hello world!");
+  XBee.begin();
+  XBee.setCallback(beeCallback);
+  //XBee.sendData("Hello world!");
 }
 
 void beeCallback() {
@@ -15,5 +14,5 @@ void beeCallback() {
 }
 
 void loop() {
-  XBee->tick();
+  XBee.tick();
 }

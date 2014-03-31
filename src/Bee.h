@@ -32,7 +32,7 @@ struct BeeCurrentPacket {
     uint16_t offset;
     uint16_t size;
     uint16_t checksum;
-    char *data;
+    char data[255];
     bool isEscaped;
 };
 
@@ -40,17 +40,24 @@ typedef void (*BeeCallback)();
 
 class Bee {
 public:
-    Bee(HardwareSerial *serial, unsigned long baud);
+    Bee(HardwareSerial *serial, uint32_t baud);
     void tick();
     void sendLocalAT(char command[2]);
     void sendData(String data);
     void setCallback(BeeCallback);
+    void begin();
     void end();
 private:
+    // Prevent heap allocation
+    void * operator new   (size_t);
+    void * operator new[] (size_t);
+    void   operator delete   (void *);
+    void   operator delete[] (void *);
+
     uint8_t _checksum(char *packet, uint16_t size);
     void _processFrame(BeeCurrentPacket *packet);
     HardwareSerial *_serial;
-    uint16_t _frameByte;
+    uint32_t _baud;
     ExpRxIndFrame _currentFrame;
     BeeCurrentPacket _currentPacket;
     BeeCallback _callback;

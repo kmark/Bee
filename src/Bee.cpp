@@ -17,11 +17,11 @@
 
 #include "Bee.h"
 
-Bee::Bee(HardwareSerial *serial, unsigned long baud) {
+Bee::Bee(HardwareSerial *serial, uint32_t baud) {
     _serial = serial;
-    _serial->begin(baud);
-    _frameByte = 0;
-    _currentPacket.offset = _currentPacket.size = 0;
+    _baud = baud;
+    _currentPacket.offset = _currentPacket.size = _currentPacket.checksum = 0;
+    _currentPacket.isEscaped = false;
 }
 
 void Bee::tick() {
@@ -36,8 +36,7 @@ void Bee::tick() {
         _currentPacket.size = 0;
         _currentPacket.checksum = 0;
         _currentPacket.isEscaped = false;
-        delete[] _currentPacket.data;
-        _currentPacket.data = NULL;
+        memset(_currentPacket.data, 0, sizeof(_currentPacket.data));
         return;
     }
     switch(++_currentPacket.offset) {
@@ -46,7 +45,7 @@ void Bee::tick() {
             return;
         case 2:
             _currentPacket.size = (_currentPacket.size | c) + 3;
-            _currentPacket.data = new char[_currentPacket.size];
+            // _currentPacket.data has already been zeroed
             _currentPacket.data[0] = 0x7E;
             _currentPacket.data[1] = ((_currentPacket.size - 3) >> 8) & 0xFF;
             _currentPacket.data[2] = c;
@@ -131,6 +130,10 @@ void Bee::sendData(String s) {
 
 void Bee::setCallback(BeeCallback callback) {
     _callback = callback;
+}
+
+void Bee::begin() {
+    _serial->begin(_baud);
 }
 
 void Bee::end() {
