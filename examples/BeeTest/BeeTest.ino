@@ -4,13 +4,13 @@ Bee XBee(&Serial3, 19200);
 
 void setup() {
   Serial.begin(115200);
-  XBee.begin();
   XBee.setCallback(beeCallback);
+  XBee.begin();
   //XBee.sendData("Hello world!");
 }
 
-void beeCallback() {
-  //
+void beeCallback(BeePointerFrame *frame) {
+  Serial.write(frame->data, frame->dataLength);
 }
 
 void loop() {

@@ -20,12 +20,13 @@
 
 #include "Arduino.h"
 
-struct ExpRxIndFrame {
+struct BeePointerFrame {
+    char *frameType;
     uint16_t packetLength;
-    uint64_t source64;
-    uint16_t source16;
+    uint64_t *source64;
+    uint16_t *source16;
     uint16_t dataLength;
-    uint8_t data[];
+    char *data;
 };
 
 struct BeeCurrentPacket {
@@ -36,7 +37,7 @@ struct BeeCurrentPacket {
     bool isEscaped;
 };
 
-typedef void (*BeeCallback)();
+typedef void (*BeeCallback)(BeePointerFrame *);
 
 class Bee {
 public:
@@ -55,11 +56,11 @@ private:
     void   operator delete[] (void *);
 
     uint8_t _checksum(char *packet, uint16_t size);
-    void _processFrame(BeeCurrentPacket *packet);
+    void _processFrame();
     HardwareSerial *_serial;
     uint32_t _baud;
-    ExpRxIndFrame _currentFrame;
     BeeCurrentPacket _currentPacket;
+    BeePointerFrame _pointerFrame;
     BeeCallback _callback;
 };
 

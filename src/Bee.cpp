@@ -28,9 +28,9 @@ void Bee::tick() {
     if(!_serial->available()) {
         return;
     }
-    
+
     char c = _serial->read();
-    
+
     if(c == 0x7E) {
         _currentPacket.offset = 0;
         _currentPacket.size = 0;
@@ -60,24 +60,38 @@ void Bee::tick() {
         _currentPacket.offset--;
         return;
     }
-    
+
     _currentPacket.data[_currentPacket.offset] = c;
-    
+
     if(_currentPacket.offset == _currentPacket.size) {
         _currentPacket.checksum = 0xFF - (_currentPacket.checksum & 0xFF);
-        Serial.println(_currentPacket.checksum == (uint8_t)c ? "PASSED" : "FAILED");
-        
-        if(_currentPacket.checksum == c) {
+        //Serial.println(_currentPacket.checksum == (uint8_t)c ? "PASSED" : "FAILED");
+
+        if(_currentPacket.checksum == (uint8_t)c) {
             // Process contents of frame
+            _processFrame();
         }
         return;
     }
-    
+
     _currentPacket.checksum += c;
 }
 
-void Bee::_processFrame(BeeCurrentPacket *packet) {
-    
+void Bee::_processFrame() {
+    _pointerFrame.frameType = &_currentPacket.data[3];
+    switch(*_pointerFrame.frameType) {
+        case ExpRxIndicator:
+            _pointerFrame.source64 = (uint64_t*)&_currentPacket.data[4];
+            _pointerFrame.source16 = (uint16_t*)&_currentPacket.data[12];
+            // 16 and 64 bit source addrs are big endian, Arduino is little
+            *_pointerFrame.source16 = (*_pointerFrame.source16 >> 8) |
+              (*_pointerFrame.source16 << 8);
+            *_pointerFrame.source64 = __builtin_bswap64(*_pointerFrame.source64);
+            _pointerFrame.data = &_currentPacket.data[21];
+            _pointerFrame.dataLength = _currentPacket.size - 21;
+            break;
+    }
+    _callback(&_pointerFrame);
 }
 
 uint8_t Bee::_checksum(char *packet, uint16_t size) {
