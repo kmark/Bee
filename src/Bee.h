@@ -19,6 +19,7 @@
 #define _Bee_h
 
 #include "Arduino.h"
+#include "SoftwareSerial.h"
 
 struct BeePointerFrame {
     char *frameType;
@@ -42,9 +43,11 @@ typedef void (*BeeCallback)(BeePointerFrame *);
 class Bee {
 public:
     Bee(HardwareSerial *serial, uint32_t baud);
+    Bee(SoftwareSerial *serial, uint32_t baud);
     void tick();
     void sendLocalAT(char command[2]);
     void sendData(String data);
+    void sendData(char *data, uint16_t size);
     void setCallback(BeeCallback);
     void begin();
     void end();
@@ -57,7 +60,13 @@ private:
 
     uint8_t _checksum(char *packet, uint16_t size);
     void _processFrame();
+    bool _escapeRequired(char c);
+    uint16_t _available();
+    char _read();
+    void _write(char c);
+    void _write(char *c, uint16_t size);
     HardwareSerial *_serial;
+    SoftwareSerial *_serialSoft;
     uint32_t _baud;
     BeeCurrentPacket _currentPacket;
     BeePointerFrame _pointerFrame;

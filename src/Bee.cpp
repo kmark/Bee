@@ -19,17 +19,26 @@
 
 Bee::Bee(HardwareSerial *serial, uint32_t baud) {
     _serial = serial;
+    _serialSoft = NULL;
+    _baud = baud;
+    _currentPacket.offset = _currentPacket.size = _currentPacket.checksum = 0;
+    _currentPacket.isEscaped = false;
+}
+
+Bee::Bee(SoftwareSerial *serial, uint32_t baud) {
+    _serial = NULL;
+    _serialSoft = serial;
     _baud = baud;
     _currentPacket.offset = _currentPacket.size = _currentPacket.checksum = 0;
     _currentPacket.isEscaped = false;
 }
 
 void Bee::tick() {
-    if(!_serial->available()) {
+    if(!_available()) {
         return;
     }
 
-    char c = _serial->read();
+    char c = _read();
 
     if(c == 0x7E) {
         _currentPacket.offset = 0;
@@ -105,7 +114,7 @@ uint8_t Bee::_checksum(char *packet, uint16_t size) {
 void Bee::sendLocalAT(char command[2]) {
     char at[8] = { 0x7E, 0x00, 0x04, 0x08, 0x01, command[0], command[1], 0x00 };
     at[7] = _checksum(at, sizeof at);
-    _serial->write(at, sizeof at);
+    _write(at, sizeof at);
 }
 
 void Bee::sendData(String s) {
@@ -139,17 +148,108 @@ void Bee::sendData(String s) {
     for(int i = 0; i < sizeof packet; i++) {
         //Serial.println(packet[i], HEX);
     }
-    _serial->write(packet, sizeof packet);
+    _write(packet, sizeof packet);
+}
+
+void Bee::sendData(char *data, uint16_t size) {
+    char init[] = { 0x7E, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0xFF, 0xFF, 0xFF, 0xFE, 0x00, 0x00 };
+
+    uint16_t packetLength = sizeof(init) + size - 3;
+    uint16_t checksum = 0;
+
+    // Write init bytes
+    for(uint8_t i = 0; i < sizeof(init); i++) {
+        uint8_t ibyte = init[i];
+        if(i == 1) { // High length byte
+            ibyte = packetLength >> 8;
+        } else if(i == 2) { // Low length byte
+            ibyte = packetLength & 0xFF;
+        }
+        if(i != 0) {
+            if(_escapeRequired(ibyte)) {
+                _write(0x7D);
+                ibyte ^= 0x20;
+            }
+        }
+        _write(ibyte);
+        if(i > 2) {
+            checksum += init[i];
+        }
+    }
+
+    // Write data bytes
+    for(uint16_t i = 0; i < size; i++) {
+        uint8_t ibyte = data[i];
+        checksum += ibyte; // Only pre-escape bytes are used for the checksum
+        if(_escapeRequired(ibyte)) {
+            _write(0x7D);
+            ibyte ^= 0x20;
+        }
+        _write(ibyte);
+    }
+
+    // Write checksum byte
+    _write(0xFF - (checksum & 0xFF));
+}
+
+bool Bee::_escapeRequired(char c) {
+    switch(c) {
+        case 0x11:
+        case 0x13:
+        case 0x7D:
+        case 0x7E:
+            return true;
+    }
+    return false;
 }
 
 void Bee::setCallback(BeeCallback callback) {
     _callback = callback;
 }
 
+uint16_t Bee::_available() {
+    if(_serial == NULL) {
+        return _serialSoft->available();
+    }
+    return _serial->available();
+}
+
+char Bee::_read() {
+    if(_serial == NULL) {
+        return _serialSoft->read();
+    }
+    return _serial->read();
+}
+
+void Bee::_write(char c) {
+    if(_serial == NULL) {
+        _serialSoft->write(c);
+        return;
+    }
+    _serial->write(c);
+}
+
+void Bee::_write(char *c, uint16_t size) {
+    if(_serial == NULL) {
+        _serialSoft->write(c, size);
+        return;
+    }
+    _serial->write(c, size);
+}
+
 void Bee::begin() {
+    if(_serial == NULL) {
+        _serialSoft->begin(_baud);
+        return;
+    }
     _serial->begin(_baud);
 }
 
 void Bee::end() {
+    if(_serial == NULL) {
+        _serialSoft->end();
+        return;
+    }
     _serial->end();
 }
