@@ -1,3 +1,4 @@
+#include <SoftwareSerial.h> // Workaround
 #include <Bee.h>
 
 Bee XBee(&Serial3, 19200);
