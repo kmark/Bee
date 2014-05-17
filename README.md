@@ -70,5 +70,7 @@ destination address of a Transmit Request
 the entire data array?
 
 ## Licensing
+Copyright &copy; 2014 Kevin Mark
+
 Bee is licensed under the GNU LGPLv3, a supplement to the GNU GPLv3.
 Please see `COPYING.md` and `COPYING.LESSER.md` for licensing details.

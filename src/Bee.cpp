@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2014 Kevin Mark
+ *
  * This file is part of Bee.
  *
  * Bee is free software: you can redistribute it and/or modify
