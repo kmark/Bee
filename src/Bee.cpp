@@ -147,9 +147,6 @@ void Bee::sendData(String s) {
     packet[1] = packetLength >> 8;
     packet[2] = packetLength & 0xFF;
     packet[len + 17] = _checksum(packet, sizeof packet);
-    for(int i = 0; i < sizeof packet; i++) {
-        //Serial.println(packet[i], HEX);
-    }
     _write(packet, sizeof packet);
 }
 
