@@ -52,9 +52,27 @@ void Bee::tick() {
     }
     switch(++_currentPacket.offset) {
         case 1:
+            if(_currentPacket.isEscaped) {
+                _currentPacket.isEscaped = false;
+                c ^= 0x20;
+            }
+            else if(c == 0x7D) {
+                _currentPacket.isEscaped = true;
+                _currentPacket.offset--;
+                return;
+            }
             _currentPacket.size = c << 8;
             return;
         case 2:
+            if(_currentPacket.isEscaped) {
+                _currentPacket.isEscaped = false;
+                c ^= 0x20;
+            }
+            else if(c == 0x7D) {
+                _currentPacket.isEscaped = true;
+                _currentPacket.offset--;
+                return;
+            }
             _currentPacket.size = (_currentPacket.size | c) + 3;
             // _currentPacket.data has already been zeroed
             _currentPacket.data[0] = 0x7E;
