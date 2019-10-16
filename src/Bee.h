@@ -48,8 +48,8 @@ public:
     Bee(SoftwareSerial *serial, uint32_t baud);
     void tick();
     void sendLocalAT(char command[2]);
-    void sendData(String data);
-    void sendData(char *data, uint16_t size);
+    void sendData(String data, char address[]);
+    void sendData(char *data, uint16_t size, char address[]);
     void setCallback(BeeCallback);
     void begin();
     void end();

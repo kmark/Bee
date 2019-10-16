@@ -137,7 +137,7 @@ void Bee::sendLocalAT(char command[2]) {
     _write(at, sizeof at);
 }
 
-void Bee::sendData(String s) {
+void Bee::sendData(String s, char address[]) {
     int len = s.length();
     char packet[len + 18];
     memset(packet, 0x00, sizeof packet);
@@ -146,14 +146,14 @@ void Bee::sendData(String s) {
     packet[2] = 0x00;
     packet[3] = 0x10;
     packet[4] = 0x01;
-    packet[5] = 0x00;
-    packet[6] = 0x00;
-    packet[7] = 0x00;
-    packet[8] = 0x00;
-    packet[9] = 0x00;
-    packet[10] = 0x00;
-    packet[11] = 0xFF;
-    packet[12] = 0xFF;
+    packet[5] = address[0];
+    packet[6] = address[1];
+    packet[7] = address[2];
+    packet[8] = address[3];
+    packet[9] = address[4];
+    packet[10] = address[5];
+    packet[11] = address[6];
+    packet[12] = address[7];
     packet[13] = 0xFF;
     packet[14] = 0xFE;
     packet[15] = 0x00;
@@ -168,9 +168,9 @@ void Bee::sendData(String s) {
     _write(packet, sizeof packet);
 }
 
-void Bee::sendData(char *data, uint16_t size) {
-    char init[] = { 0x7E, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0xFF, 0xFF, 0xFF, 0xFE, 0x00, 0x00 };
+void Bee::sendData(char *data, uint16_t size, char address[]) {
+    char init[] = { 0x7E, 0x00, 0x00, 0x10, 0x01, address[0], address[1], address[2], address[3], address[4],
+        address[5], address[6], address[7], 0xFF, 0xFE, 0x00, 0x00 };
 
     uint16_t packetLength = sizeof(init) + size - 3;
     uint16_t checksum = 0;
@@ -183,12 +183,7 @@ void Bee::sendData(char *data, uint16_t size) {
         } else if(i == 2) { // Low length byte
             ibyte = packetLength & 0xFF;
         }
-        if(i != 0) {
-            if(_escapeRequired(ibyte)) {
-                _write(0x7D);
-                ibyte ^= 0x20;
-            }
-        }
+
         _write(ibyte);
         if(i > 2) {
             checksum += init[i];
